@@ -60,9 +60,23 @@ resource "null_resource" "webapp" {
     destination = "/tmp/userdata.sh"
   }
 
+  provisioner "remote-exec" {
+    inline = ["mkdir -p /tmp/site"]
+  }
+
   provisioner "file" {
-    source      = "${path.module}/site/"
-    destination = "/tmp/site/"
+    source      = "${path.module}/site/index.html"
+    destination = "/tmp/site/index.html"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/site/styles.css"
+    destination = "/tmp/site/styles.css"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/site/app.js"
+    destination = "/tmp/site/app.js"
   }
 
   provisioner "remote-exec" {
