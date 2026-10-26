@@ -42,39 +42,59 @@ resource "aws_instance" "main" {
     "Name" = "${local.name_prefix}-webapp-${count.index}"
   })
 
-  # Provisioner Stuff
-  connection {
-    type        = "ssh"
-    user        = "ec2-user"
-    port        = "22"
-    host        = self.public_ip
-    private_key = module.ssh_keys.private_key_openssh
+}
+
+resource "null_resource" "webapp" {
+  count = length(aws_instance.main)
+
+  triggers = {
+    instance_id = aws_instance.main[count.index].id
+    bootstrap   = filesha256("${path.module}/templates/userdata.sh")
+    html        = filesha256("${path.module}/site/index.html")
+    css         = filesha256("${path.module}/site/styles.css")
+    javascript  = filesha256("${path.module}/site/app.js")
   }
 
   provisioner "file" {
-    source      = "./templates/userdata.sh"
-    destination = "/home/ec2-user/userdata.sh"
+    source      = "${path.module}/templates/userdata.sh"
+    destination = "/tmp/userdata.sh"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/site/"
+    destination = "/tmp/site/"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "chmod +x /home/ec2-user/userdata.sh",
-      "sh /home/ec2-user/userdata.sh",
+      "sudo bash /tmp/userdata.sh",
+      "sudo install -d -o nginx -g nginx /usr/share/nginx/html",
+      "sudo cp -R /tmp/site/. /usr/share/nginx/html/",
+      "sudo chown -R nginx:nginx /usr/share/nginx/html",
+      "sudo nginx -t && sudo systemctl reload nginx",
     ]
-    on_failure = continue
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    port        = "22"
+    host        = aws_instance.main[count.index].public_ip
+    private_key = module.ssh_keys.private_key_openssh
   }
 
 }
 
-resource "null_resource" "webapp" {
+resource "null_resource" "application_config" {
+  count = length(aws_instance.main) > 0 ? 1 : 0
 
   triggers = {
-    webapp_server_count = length(aws_instance.main.*.id)
-    web_server_names    = join(",", aws_instance.main.*.id)
+    web_server_names = join(",", aws_instance.main.*.id)
+    config_template  = filesha256("${path.module}/templates/application.config.tpl")
   }
 
   provisioner "file" {
-    content = templatefile("./templates/application.config.tpl", {
+    content = templatefile("${path.module}/templates/application.config.tpl", {
       hosts     = aws_instance.main.*.private_dns
       site_name = "${local.name_prefix}-taco-wagon"
       api_key   = var.api_key
@@ -85,11 +105,10 @@ resource "null_resource" "webapp" {
   connection {
     type        = "ssh"
     user        = "ec2-user"
-    port        = "22"
+    port        = 22
     host        = aws_instance.main[0].public_ip
     private_key = module.ssh_keys.private_key_openssh
   }
-
 }
 
 resource "aws_lb" "main" {
