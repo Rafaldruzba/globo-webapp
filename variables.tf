@@ -32,6 +32,16 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
+variable "api_key_secret_id" {
+  type        = string
+  description = "(Required) | Secret ID for the API key for web app to talk to SaaS platform."
+}
+
+variable "ec2_role_name" {
+  type        = string
+  description = "(Required) | Role Name for EC@ instance profile."
+}
+
 variable "tfe_organization" {
   type        = string
   description = "(Required) | Name of TFC organization"
@@ -46,16 +56,3 @@ variable "playbook_repository" {
   type        = string
   description = "(Required) | URI of Ansible playbook"
 }
-
-variable "api_key_secret_id" {
-  type        = string
-  description = "(Required) | Secret ID for the API key for web app to talk to SaaS platform."
-}
-
-variable "ec2_role_name" {
-  type        = string
-  description = "(Required) | Role Name for EC@ instance profile."
-}
-
-
-
