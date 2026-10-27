@@ -9,3 +9,7 @@ output "webapp_instance0_public_ip" {
 output "private_key_pem" {
   value = nonsensitive(module.ssh_keys.private_key_pem)
 }
+
+output "aws_account_id" {
+  value = data.aws_caller_identity.current.account_id
+}
