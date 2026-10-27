@@ -1,7 +1,7 @@
 #!/bin/bash
-set -euo pipefail
-
-# This script runs on first provisioning and whenever its hash changes.
-amazon-linux-extras install -y nginx1
-systemctl enable nginx
-systemctl start nginx
+sudo yum update
+sudo yum install git -y
+sudo amazon-linux-extras install ansible2 -y
+sudo mkdir /var/ansible_playbooks
+sudo git clone ${playbook_repository} /var/ansible_playbooks
+ansible-playbook /var/ansible_playbooks/playbook.yml -i /var/ansible_playbooks/hosts
